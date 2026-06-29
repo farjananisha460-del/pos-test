@@ -1,0 +1,17 @@
+vendor/
+node_modules/
+portable-git/
+.env
+storage/*.key
+public/hot
+public/storage
+.phpunit.result.cache
+.vagrant
+.env.backup
+.env.production
+composer.lock
+package-lock.json
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal

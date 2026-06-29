@@ -1,0 +1,47 @@
+{
+  "_sparkles-Bechdlt1.js": {
+    "file": "assets/sparkles-Bechdlt1.js",
+    "name": "sparkles",
+    "imports": [
+      "resources/js/app.jsx"
+    ]
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-DOC3MQh_.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/Pages/Auth/Login.jsx": {
+    "file": "assets/Login-DsgIQfJL.js",
+    "name": "Login",
+    "src": "resources/js/Pages/Auth/Login.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.jsx",
+      "_sparkles-Bechdlt1.js"
+    ]
+  },
+  "resources/js/Pages/Dashboard.jsx": {
+    "file": "assets/Dashboard-BDyCU2tx.js",
+    "name": "Dashboard",
+    "src": "resources/js/Pages/Dashboard.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.jsx",
+      "_sparkles-Bechdlt1.js"
+    ]
+  },
+  "resources/js/app.jsx": {
+    "file": "assets/app-BDs-LhOM.js",
+    "name": "app",
+    "src": "resources/js/app.jsx",
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/Pages/Auth/Login.jsx",
+      "resources/js/Pages/Dashboard.jsx"
+    ],
+    "css": [
+      "assets/app-DOC3MQh_.css"
+    ]
+  }
+}
