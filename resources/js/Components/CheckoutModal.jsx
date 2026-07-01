@@ -1,14 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
-import { X, Landmark, DollarSign, Receipt, Printer, CheckCircle, AlertTriangle } from 'lucide-react';
+import { 
+    X, 
+    Landmark, 
+    DollarSign, 
+    Receipt, 
+    Printer, 
+    CheckCircle, 
+    AlertTriangle,
+    Smartphone,
+    CreditCard,
+    Gift,
+    Hash
+} from 'lucide-react';
 
-export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discount, items, onOrderSuccess }) {
+export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discount, items, customerId, couponCode, onOrderSuccess }) {
     if (!isOpen) return null;
 
     const grandTotal = Math.max(0, cartTotal + tax - discount);
 
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [cashReceived, setCashReceived] = useState('');
+    const [transactionId, setTransactionId] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [checkoutCompleted, setCheckoutCompleted] = useState(false);
     const [completedOrder, setCompletedOrder] = useState(null);
@@ -19,7 +32,6 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
     const changeDue = cashValue >= grandTotal ? cashValue - grandTotal : 0;
     const isCashInsufficient = paymentMethod === 'cash' && cashValue < grandTotal;
 
-    // Quick cash shortcuts
     const quickCashOptions = [
         { label: 'Exact Amount', value: grandTotal },
         { label: '$5.00', value: 5.00 },
@@ -29,7 +41,6 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
         { label: '$100.00', value: 100.00 },
     ].filter(opt => opt.value >= grandTotal || opt.label === 'Exact Amount');
 
-    // Handle Numpad Clicks
     const handleNumpad = (val) => {
         if (val === 'C') {
             setCashReceived('');
@@ -40,7 +51,6 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                 setCashReceived(prev => prev + '.');
             }
         } else {
-            // Prevent entering multiple decimals or excessively large numbers
             if (cashReceived.includes('.') && cashReceived.split('.')[1].length >= 2) {
                 return;
             }
@@ -48,7 +58,6 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
         }
     };
 
-    // Submitting transaction to backend
     const handleSubmit = () => {
         if (isProcessing) return;
         setBackendError(null);
@@ -68,21 +77,21 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
             discount: discount,
             tax: tax,
             payment_method: paymentMethod,
-            cash_received: paymentMethod === 'cash' ? cashValue : null
+            cash_received: paymentMethod === 'cash' ? cashValue : null,
+            customer_id: customerId,
+            coupon_code: couponCode,
+            transaction_id: transactionId
         }, {
             preserveState: true,
             preserveScroll: true,
             onSuccess: (page) => {
                 setIsProcessing(false);
-                // Check if last_order was flashed into session
                 const order = page.props.flash?.last_order;
                 if (order) {
                     setCompletedOrder(order);
                     setCheckoutCompleted(true);
-                    // Pass up to dashboard to clear cart
                     onOrderSuccess(order);
                 } else {
-                    // Fallback reset if session flash isn't populated
                     setCheckoutCompleted(true);
                     onOrderSuccess(null);
                 }
@@ -95,12 +104,10 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
         });
     };
 
-    // Trigger Print layout
     const triggerPrint = () => {
         window.print();
     };
 
-    // Handle keypresses for modal shortcuts
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape' && !checkoutCompleted) {
@@ -111,6 +118,16 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose, checkoutCompleted]);
 
+    const payMethods = [
+        { id: 'cash', label: 'Cash', icon: DollarSign, color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
+        { id: 'card', label: 'Card', icon: CreditCard, color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+        { id: 'bkash', label: 'bKash', icon: Smartphone, color: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },
+        { id: 'nagad', label: 'Nagad', icon: Smartphone, color: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
+        { id: 'rocket', label: 'Rocket', icon: Smartphone, color: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
+        { id: 'bank_transfer', label: 'Bank', icon: Landmark, color: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' },
+        { id: 'gift_card', label: 'Gift Card', icon: Gift, color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
+    ];
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm no-print">
             <div className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -118,13 +135,13 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
                     <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                        <Receipt className="w-5 h-5 text-brand-400" />
+                        <Receipt className="w-5 h-5 text-blue-400" />
                         {checkoutCompleted ? 'Transaction Complete' : 'Process Checkout'}
                     </h3>
                     {!checkoutCompleted && (
                         <button 
                             onClick={onClose}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-850 transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -136,13 +153,13 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                     <div className="flex-1 p-8 flex flex-col items-center justify-center text-center space-y-6">
                         <CheckCircle className="w-20 h-20 text-emerald-400 animate-bounce" />
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-100">Sale Successfully Logged!</h2>
-                            <p className="text-slate-400 mt-1">Invoice Number: <span className="font-semibold text-brand-300">{completedOrder?.invoice_number}</span></p>
+                            <h2 className="text-2xl font-bold text-slate-100">Sale Logged Successfully!</h2>
+                            <p className="text-slate-400 mt-1">Invoice Number: <span className="font-bold text-blue-400">{completedOrder?.invoice_number}</span></p>
                         </div>
 
                         {completedOrder?.payment_method === 'cash' && (
-                            <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl w-full max-w-md">
-                                <span className="text-slate-400 text-sm block">CHANGE TO RETURN</span>
+                            <div className="p-4 bg-slate-850 border border-slate-800 rounded-2xl w-full max-w-md shadow-sm">
+                                <span className="text-slate-400 text-xs font-bold block uppercase tracking-wider">CHANGE DUE TO CUSTOMER</span>
                                 <span className="text-3xl font-extrabold text-emerald-400 font-mono">
                                     ${parseFloat(completedOrder.change_given).toFixed(2)}
                                 </span>
@@ -152,15 +169,15 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
                             <button
                                 onClick={triggerPrint}
-                                className="flex-1 py-3.5 px-6 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brand-500/20"
+                                className="flex-1 py-3.5 px-6 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20"
                             >
                                 <Printer className="w-5 h-5" /> Print Receipt
                             </button>
                             <button
                                 onClick={onClose}
-                                className="flex-1 py-3.5 px-6 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-100 font-semibold rounded-xl transition-all border border-slate-700"
+                                className="flex-1 py-3.5 px-6 bg-slate-850 hover:bg-slate-800 active:scale-95 text-slate-100 font-bold rounded-xl transition-all border border-slate-800"
                             >
-                                New Customer
+                                Next Transaction
                             </button>
                         </div>
                     </div>
@@ -169,40 +186,35 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                         
                         {/* Left Column: Payment Details */}
-                        <div className="flex-1 p-6 border-r border-slate-800 overflow-y-auto space-y-6">
+                        <div className="flex-1 p-6 border-r border-slate-800 overflow-y-auto space-y-5">
                             
                             {/* Payment Method Selectors */}
                             <div>
-                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-3">
-                                    Payment Method
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">
+                                    Select Payment Channel
                                 </label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        onClick={() => setPaymentMethod('cash')}
-                                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-200 ${
-                                            paymentMethod === 'cash' 
-                                                ? 'border-brand-500 bg-brand-500/10 text-brand-300' 
-                                                : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:bg-slate-800/40'
-                                        }`}
-                                    >
-                                        <DollarSign className="w-7 h-7" />
-                                        <span className="font-semibold text-sm">CASH</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            setPaymentMethod('card');
-                                            setCashReceived(''); // Clear cash input if card
-                                        }}
-                                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-200 ${
-                                            paymentMethod === 'card' 
-                                                ? 'border-brand-500 bg-brand-500/10 text-brand-300' 
-                                                : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:bg-slate-800/40'
-                                        }`}
-                                    >
-                                        <Landmark className="w-7 h-7" />
-                                        <span className="font-semibold text-sm">CARD</span>
-                                    </button>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {payMethods.map((pm) => {
+                                        const PMIcon = pm.icon;
+                                        const isSelected = paymentMethod === pm.id;
+                                        return (
+                                            <button
+                                                key={pm.id}
+                                                onClick={() => {
+                                                    setPaymentMethod(pm.id);
+                                                    setCashReceived('');
+                                                }}
+                                                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all duration-200 ${
+                                                    isSelected 
+                                                        ? 'border-blue-600 bg-blue-600/15 text-blue-400' 
+                                                        : 'border-slate-850 bg-slate-950/40 text-slate-400 hover:bg-slate-850'
+                                                }`}
+                                            >
+                                                <PMIcon className="w-5 h-5" />
+                                                <span className="font-extrabold text-[11px] uppercase tracking-wider">{pm.label}</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -210,8 +222,8 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                                 <div className="space-y-4">
                                     {/* Cash Received Inputs */}
                                     <div>
-                                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                                            Cash Received
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                                            Cash Received Amount
                                         </label>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-2xl font-semibold">$</span>
@@ -220,7 +232,7 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                                                 readOnly
                                                 value={cashReceived}
                                                 placeholder="0.00"
-                                                className="w-full pl-8 pr-4 py-3 bg-slate-950 text-slate-100 font-mono text-2xl font-bold rounded-xl border border-slate-800 focus:outline-none focus:border-brand-500"
+                                                className="w-full pl-8 pr-4 py-3 bg-slate-950 text-slate-100 font-mono text-2xl font-bold rounded-xl border border-slate-850 focus:outline-none"
                                             />
                                         </div>
                                     </div>
@@ -231,7 +243,7 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                                             <button
                                                 key={i}
                                                 onClick={() => setCashReceived(opt.value.toFixed(2))}
-                                                className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-700 transition-all"
+                                                className="px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-850 hover:bg-slate-800 active:scale-95 text-slate-300 border border-slate-800 transition-all"
                                             >
                                                 {opt.label === 'Exact Amount' ? 'Exact' : opt.label}
                                             </button>
@@ -246,8 +258,8 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                                                 onClick={() => handleNumpad(char)}
                                                 className={`py-3 text-lg font-bold font-mono rounded-lg transition-all active:scale-90 border select-none ${
                                                     char === 'C' 
-                                                        ? 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-900/50 text-rose-300' 
-                                                        : 'bg-slate-800 hover:bg-slate-700 border-slate-700/50 text-slate-200'
+                                                        ? 'bg-red-500/10 hover:bg-red-500/20 border-red-900/40 text-red-400' 
+                                                        : 'bg-slate-850 hover:bg-slate-800 border-slate-800/40 text-slate-200'
                                                 }`}
                                             >
                                                 {char}
@@ -255,69 +267,87 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                                         ))}
                                         <button
                                             onClick={() => handleNumpad('⌫')}
-                                            className="col-span-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-slate-200 rounded-lg font-bold transition-all active:scale-95"
+                                            className="col-span-3 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-800/40 text-slate-200 rounded-lg font-bold transition-all active:scale-95"
                                         >
                                             Backspace
                                         </button>
                                     </div>
                                 </div>
                             ) : (
-                                /* Card instructions */
-                                <div className="p-6 bg-slate-950/60 border border-slate-800 rounded-xl text-center space-y-3">
-                                    <Landmark className="w-12 h-12 text-slate-500 mx-auto" />
-                                    <h4 className="text-slate-200 font-bold">Credit/Debit Payment Terminal</h4>
-                                    <p className="text-xs text-slate-400 leading-relaxed">
-                                        Swipe, insert, or tap the customer's card on the connected POS card reader. Click 'Process Sale' below once the terminal registers authorization.
-                                    </p>
+                                /* Mobile Banking & Card transactional IDs */
+                                <div className="space-y-4 pt-2">
+                                    <div className="p-4 bg-slate-950/60 border border-slate-850 rounded-xl text-center space-y-2">
+                                        <Smartphone className="w-10 h-10 text-slate-500 mx-auto" />
+                                        <h4 className="text-slate-200 font-bold text-xs uppercase tracking-wider">Mobile Wallet Transaction Details</h4>
+                                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                                            Request the customer to scan the payment QR code or transfer the total of <span className="font-extrabold text-blue-400">${grandTotal.toFixed(2)}</span>. Log their reference number below.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                                            Reference / Transaction ID
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                                                <Hash className="w-4 h-4" />
+                                            </span>
+                                            <input
+                                                type="text"
+                                                value={transactionId}
+                                                onChange={(e) => setTransactionId(e.target.value)}
+                                                placeholder="e.g. TXN100234589"
+                                                className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 rounded-xl border border-slate-850 focus:outline-none focus:border-blue-600 text-xs font-semibold"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
                         </div>
 
                         {/* Right Column: Invoice Summary */}
-                        <div className="w-full lg:w-[350px] p-6 bg-slate-950/40 flex flex-col justify-between space-y-6">
+                        <div className="w-full lg:w-[350px] p-6 bg-slate-950/30 flex flex-col justify-between space-y-6">
                             
-                            {/* Summaries */}
                             <div className="space-y-4 flex-1">
-                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                                    Invoice Summary
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                    Checkout Invoice
                                 </label>
 
-                                <div className="space-y-2 text-sm text-slate-400">
+                                <div className="space-y-2.5 text-xs text-slate-400">
                                     <div className="flex justify-between">
                                         <span>Subtotal</span>
-                                        <span className="font-mono">${cartTotal.toFixed(2)}</span>
+                                        <span className="font-mono font-bold">${cartTotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Tax (10%)</span>
-                                        <span className="font-mono">${tax.toFixed(2)}</span>
+                                        <span className="font-mono font-bold">${tax.toFixed(2)}</span>
                                     </div>
                                     {discount > 0 && (
-                                        <div className="flex justify-between text-emerald-400">
+                                        <div className="flex justify-between text-emerald-400 font-semibold">
                                             <span>Discount</span>
                                             <span className="font-mono">-${discount.toFixed(2)}</span>
                                         </div>
                                     )}
-                                    <div className="flex justify-between border-t border-slate-800 pt-3 text-base font-bold text-slate-100">
-                                        <span>Total Due</span>
-                                        <span className="font-mono text-xl text-brand-300">${grandTotal.toFixed(2)}</span>
+                                    <div className="flex justify-between border-t border-slate-800 pt-3 text-sm font-bold text-slate-100">
+                                        <span>Total Payable</span>
+                                        <span className="font-mono text-lg text-blue-400">${grandTotal.toFixed(2)}</span>
                                     </div>
                                 </div>
 
-                                {/* Math calculations for Cash change */}
                                 {paymentMethod === 'cash' && (
-                                    <div className="pt-4 border-t border-slate-800 space-y-3">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-400">Cash Tendered</span>
-                                            <span className="font-mono font-semibold text-slate-300">${cashValue.toFixed(2)}</span>
+                                    <div className="pt-4 border-t border-slate-800/60 space-y-3">
+                                        <div className="flex justify-between text-xs font-semibold">
+                                            <span className="text-slate-400">Cash Received</span>
+                                            <span className="font-mono text-slate-200">${cashValue.toFixed(2)}</span>
                                         </div>
                                         {isCashInsufficient ? (
-                                            <div className="flex items-center gap-2 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+                                            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold">
                                                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                                                <span>Insufficient funds. Short of ${(grandTotal - cashValue).toFixed(2)}</span>
+                                                <span>Insufficient. Missing ${(grandTotal - cashValue).toFixed(2)}</span>
                                             </div>
                                         ) : (
-                                            <div className="flex justify-between text-base font-bold text-emerald-400 bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10">
+                                            <div className="flex justify-between text-xs font-bold text-emerald-400 bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
                                                 <span>Change Due</span>
                                                 <span className="font-mono">${changeDue.toFixed(2)}</span>
                                             </div>
@@ -325,41 +355,40 @@ export default function CheckoutModal({ isOpen, onClose, cartTotal, tax, discoun
                                     </div>
                                 )}
 
-                                {/* Error messages */}
                                 {backendError && (
-                                    <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs leading-normal flex items-start gap-2">
+                                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] leading-normal flex items-start gap-2 font-bold">
                                         <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                                         <span>{backendError}</span>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Submit block */}
+                            {/* Submit actions */}
                             <div className="space-y-3 pt-4 border-t border-slate-800">
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isProcessing || isCashInsufficient}
-                                    className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 ${
+                                    className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 text-xs uppercase tracking-wider ${
                                         isProcessing || isCashInsufficient
                                             ? 'bg-slate-800 text-slate-500 cursor-not-allowed shadow-none'
-                                            : 'bg-brand-500 hover:bg-brand-600 text-white shadow-brand-500/20'
+                                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
                                     }`}
                                 >
                                     {isProcessing ? (
                                         <>
-                                            <div className="w-5 h-5 border-2 border-slate-300 border-t-transparent rounded-full animate-spin"></div>
+                                            <div className="w-4 h-4 border-2 border-slate-350 border-t-transparent rounded-full animate-spin"></div>
                                             Processing...
                                         </>
                                     ) : (
-                                        'Process Sale'
+                                        'Confirm Checkout'
                                     )}
                                 </button>
                                 <button
                                     onClick={onClose}
                                     disabled={isProcessing}
-                                    className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/50 rounded-xl font-semibold text-sm transition-all"
+                                    className="w-full py-3 bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
                                 >
-                                    Cancel
+                                    Close
                                 </button>
                             </div>
 

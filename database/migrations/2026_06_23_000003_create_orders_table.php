@@ -18,9 +18,11 @@ return new class extends Migration
             $table->decimal('tax', 10, 2)->default(0.00);
             $table->decimal('discount', 10, 2)->default(0.00);
             $table->decimal('grand_total', 10, 2);
-            $table->enum('payment_method', ['cash', 'card']);
+            $table->string('payment_method')->default('cash'); // cash, card, bkash, nagad, rocket, bank_transfer, gift_card
             $table->decimal('cash_received', 10, 2)->nullable();
             $table->decimal('change_given', 10, 2)->nullable();
+            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
+            $table->foreignId('coupon_id')->nullable()->constrained('coupons')->nullOnDelete();
             $table->foreignId('cashier_id')->constrained('users')->restrictOnDelete();
             $table->timestamps();
         });

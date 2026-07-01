@@ -20,6 +20,8 @@ class Order extends Model
         'payment_method',
         'cash_received',
         'change_given',
+        'customer_id',
+        'coupon_id',
         'cashier_id',
     ];
 
@@ -31,6 +33,22 @@ class Order extends Model
         'cash_received' => 'decimal:2',
         'change_given' => 'decimal:2',
     ];
+
+    /**
+     * Get the customer associated with the order.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Get the coupon used in this order.
+     */
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
+    }
 
     /**
      * Get the cashier (user) who processed the order.

@@ -11,9 +11,9 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-        <!-- Scripts -->
-        @viteReactRefresh
-        @vite(['resources/js/app.jsx'])
+        <!-- Chart.js and Tailwind compilation dynamically loaded -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        @vite(['resources/js/app.jsx', 'resources/css/app.css'])
         @inertiaHead
     </head>
     <body class="font-sans antialiased bg-slate-950 text-slate-100 min-h-screen">
